@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG/Image to CSS Clip-Path Converter (Advanced)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel h2 {
+            margin-top: 0;
+            color: #3498db;
+            font-size: 1.4rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        textarea, input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            resize: vertical;
+            min-height: 150px;
+            box-sizing: border-box;
+        }
+        
+        input[type="number"] {
+            min-height: auto;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .preview-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .preview-box {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+            background-color: #3498db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            background-size: cover;
+            background-position: center;
+            overflow: hidden;
+            border: 1px solid #ccc;
+        }
+
+        .instructions {
+            margin-top: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0 0 0 / 0.1);
+        }
+
+        .instructions h2 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
+        .instructions ol {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 10px;
+        }
+
+        .code-block {
+            background: #f8f8f8;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            overflow-x: auto;
+        }
+
+        .error {
+            color: #e74c3c;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .success {
+            color: #27ae60;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 15px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: #eee;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+        }
+
+        .tab.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 5px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .upload-area:hover {
+            border-color: #3498db;
+        }
+
+        #imagePreview {
+            max-width: 100%;
+            max-height: 120px;
+            margin-top: 15px;
+            display: none;
+            object-fit: contain;
+        }
+
+        .control-group {
+            margin-top: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-group label {
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        #colorPicker {
+            width: 50px;
+            height: 30px;
+            padding: 0;
+            border: 1px solid #ddd;
+        }
+
+        #imageOptions {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed #eee;
+        }
+        #imageOptions h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        .output-type-tabs {
+            display: flex;
+            margin-bottom: 10px;
+            margin-top: 10px;
+        }
+        .output-type-tab {
+            padding: 8px 15px;
+            cursor: pointer;
+            background: #f0f0f0;
+            border-radius: 4px;
+            margin-right: 5px;
+            font-size: 0.9rem;
+        }
+        .output-type-tab.active {
+            background: #28a745;
+            color: white;
+        }
+        .browser-support-note {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 5px;
+            margin-bottom: 10px;
+        }
+        .browser-support-note.warning {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>SVG/Image to CSS Clip-Path Converter </h1>
+
+    <div class="container">
+        <div class="panel">
+            <h2>Input Source</h2>
+            <div class="tabs">
+                <div class="tab active" data-tab="svg-tab">SVG Path</div>
+                <div class="tab" data-tab="image-tab">Image Upload</div>
+            </div>
+
+            <div id="svg-tab" class="tab-content active">
+                <textarea id="svgPathInput" placeholder="Paste your SVG path here (e.g., &quot;M10 10 H 90 V 90 H 10 Z&quot;)">M50 10 C 20 0 0 40 10 70 S 50 100 80 70 S 90 20 50 10 Z</textarea>
+                <small>For SVG paths with curves, the polygon output is an approximation.</small>
+            </div>
+
+            <div id="image-tab" class="tab-content">
+                <div id="uploadArea" class="upload-area">
+                    <p>Drag & drop an image here or click to browse</p>
+                    <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                    <img id="imagePreview" alt="Preview">
+                </div>
+                <div id="imageOptions" style="display: none;">
+                    <h3>Image Tracing Options</h3>
+                    <div class="control-group">
+                        <label for="turdSize">Turd Size:</label>
+                        <input type="number" id="turdSize" value="2" min="0" max="100" step="1">
+                        <small>Filters out small shapes/noise. Higher = fewer details.</small>
+                    </div>
+                    <div class="control-group">
+                        <label for="lineRes">Line Resolution:</label>
+                        <input type="number" id="lineRes" value="0.5" min="0.1" max="10" step="0.1">
+                        <small>Lower = more detailed lines in traced SVG.</small>
+                    </div>
+                    <div class="control-group">
+                        <label for="quadRes">Quad Resolution:</label>
+                        <input type="number" id="quadRes" value="0.5" min="0.1" max="10" step="0.1">
+                        <small>Lower = more detailed quadratic curves in traced SVG.</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="colorPicker">Preview Color:</label>
+                <input type="color" id="colorPicker" value="#3498db">
+            </div>
+
+            <div id="segmentsControl" class="control-group">
+                <label for="numSegments">Curve Segments (for Polygon):</label>
+                <input type="number" id="numSegments" value="50" min="5" max="1000">
+                <small>More segments = visually smoother polygon, much larger CSS code. **Has no effect on `clip-path: path()`**.</small>
+            </div>
+
+            <button id="convertBtn">Convert to CSS Clip-Path</button>
+            <div id="errorMessage" class="error"></div>
+            <div id="successMessage" class="success"></div>
+        </div>
+
+        <div class="panel">
+            <h2>CSS Clip-Path Output</h2>
+            <div class="output-type-tabs">
+                <div class="output-type-tab active" data-output-type="polygon">`clip-path: polygon()`</div>
+                <div class="output-type-tab" data-output-type="path">`clip-path: path()`</div>
+            </div>
+            <p id="browserSupportNote" class="browser-support-note warning">`clip-path: polygon()` works widely. `clip-path: path()` has limited browser support (Chrome/Edge).</p>
+            <textarea id="cssOutput" readonly placeholder="Your CSS clip-path code will appear here"></textarea>
+            <button id="copyBtn">Copy to Clipboard</button>
+        </div>
+    </div>
+
+    <div class="preview-container">
+        <h2>Preview</h2>
+        <div class="preview-box" id="previewBox">Preview</div>
+    </div>
+
+    <div class="instructions">
+        <h2>How to Use This Tool</h2>
+        <ol>
+            <li><strong>Input Method:</strong> Choose "SVG Path" or "Image Upload".</li>
+            <li><strong>Adjust Options:</strong>
+                <ul>
+                    <li>For SVG Paths: Adjust **"Curve Segments"** for `polygon()` smoothness. Higher numbers lead to a visually smoother approximation, but larger CSS output.</li>
+                    <li>For Image Uploads: Use **"Image Tracing Options"** (`Turd Size`, `Line/Quad Resolution`) to get the most accurate and clean SVG trace. Then, use **"Curve Segments"** for `polygon()` smoothness.</li>
+                </ul>
+            </li>
+            <li>Click "Convert to CSS Clip-Path".</li>
+            <li><strong>Choose Output Type:</strong>
+                <ul>
+                    <li>**`clip-path: polygon()`:** Widely supported, but only uses straight lines. Curves are always approximated.</li>
+                    <li>**`clip-path: path()`:** (Appears if SVG Path was used as input) Produces *true* curves directly from the SVG path data. This is the **most accurate and smoothest** method, but has limited browser support (mainly Chrome/Edge). Use this if browser support is not a primary concern or for future-proofing.</li>
+                </ul>
+            </li>
+            <li>Copy the generated CSS code.</li>
+        </ol>
+
+        <h3>Important Considerations:</h3>
+        <ul>
+            <li>`clip-path: polygon()` cannot create mathematically true curves; it approximates them with many small straight lines.</li>
+            <li>The quality of the initial SVG trace (from an image) heavily influences the accuracy of the final clip-path.</li>
+        </ul>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/imagetracerjs@1.2.6/imagetracer_v1.2.6.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const svgPathInput = document.getElementById('svgPathInput');
+            const cssOutput = document.getElementById('cssOutput');
+            const convertBtn = document.getElementById('convertBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const previewBox = document.getElementById('previewBox');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            const uploadArea = document.getElementById('uploadArea');
+            const imageUpload = document.getElementById('imageUpload');
+            const imagePreview = document.getElementById('imagePreview');
+            const colorPicker = document.getElementById('colorPicker');
+            const numSegmentsInput = document.getElementById('numSegments');
+            const segmentsControl = document.getElementById('segmentsControl'); // For toggling visibility
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            const imageOptionsDiv = document.getElementById('imageOptions');
+            const turdSizeInput = document.getElementById('turdSize');
+            const lineResInput = document.getElementById('lineRes');
+            const quadResInput = document.getElementById('quadRes');
+            const outputTypeTabs = document.querySelectorAll('.output-type-tab');
+            const browserSupportNote = document.getElementById('browserSupportNote');
+
+            let currentTab = 'svg-tab'; // 'svg-tab' or 'image-tab'
+            let currentOutputType = 'polygon'; // 'polygon' or 'path'
+            let uploadedImage = null;
+            let lastGeneratedPathData = ''; // Store the raw SVG path for `clip-path: path()`
+
+            // Initialize with a more complex SVG path
+            svgPathInput.value = 'M50 10 C 20 0 0 40 10 70 S 50 100 80 70 S 90 20 50 10 Z';
+            numSegmentsInput.value = 50; // Default to a higher segment count for smoother appearance
+
+            // Tab switching for input source
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    tabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    document.getElementById(tabId).classList.add('active');
+                    currentTab = tabId;
+                    errorMessage.textContent = '';
+                    successMessage.textContent = '';
+                    cssOutput.value = ''; // Clear output when tab changes
+
+                    // Show/hide image options based on tab
+                    if (tabId === 'image-tab') {
+                        imageOptionsDiv.style.display = 'block';
+                    } else {
+                        imageOptionsDiv.style.display = 'none';
+                    }
+                    // Reset output type to polygon when input source changes for clarity
+                    outputTypeTabs.forEach(ot => ot.classList.remove('active'));
+                    document.querySelector('.output-type-tab[data-output-type="polygon"]').classList.add('active');
+                    currentOutputType = 'polygon';
+                    updateBrowserSupportNote();
+                });
+            });
+
+            // Output type tabs (polygon vs path)
+            outputTypeTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    outputTypeTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    currentOutputType = this.getAttribute('data-output-type');
+                    updateOutputBasedOnType();
+                    updateBrowserSupportNote();
+
+                    // The segments control is now *always visible* as requested.
+                    // Its meaning depends on the selected output type.
+                });
+            });
+
+            function updateBrowserSupportNote() {
+                if (currentOutputType === 'polygon') {
+                    browserSupportNote.textContent = '`clip-path: polygon()` works widely across modern browsers.';
+                    browserSupportNote.classList.remove('warning');
+                } else {
+                    browserSupportNote.textContent = '`clip-path: path()` has limited browser support (primarily Chrome/Edge).';
+                    browserSupportNote.classList.add('warning');
+                }
+            }
+
+
+            // Image upload handlers
+            uploadArea.addEventListener('click', () => imageUpload.click());
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.style.borderColor = '#3498db';
+            });
+            uploadArea.addEventListener('dragleave', function() {
+                this.style.borderColor = '#ccc';
+            });
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.style.borderColor = '#ccc';
+                if (e.dataTransfer.files.length) {
+                    handleImageUpload(e.dataTransfer.files[0]);
+                }
+            });
+            imageUpload.addEventListener('change', function() {
+                if (this.files.length) {
+                    handleImageUpload(this.files[0]);
+                }
+            });
+
+            // Color picker
+            colorPicker.addEventListener('input', function() {
+                previewBox.style.backgroundColor = this.value;
+            });
+
+            // Convert button
+            convertBtn.addEventListener('click', function() {
+                errorMessage.textContent = '';
+                successMessage.textContent = '';
+
+                if (currentTab === 'svg-tab') {
+                    convertSvgPath();
+                } else {
+                    if (!uploadedImage) {
+                        errorMessage.textContent = 'Please upload an image first';
+                        return;
+                    }
+                    convertImageToPath();
+                }
+            });
+
+            // Copy button
+            copyBtn.addEventListener('click', function() {
+                if (!cssOutput.value) {
+                    errorMessage.textContent = 'Nothing to copy - convert a path first';
+                    return;
+                }
+                cssOutput.select();
+                document.execCommand('copy');
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = 'Copied!';
+                copyBtn.style.backgroundColor = '#27ae60';
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                    copyBtn.style.backgroundColor = '#3498db';
+                }, 2000);
+            });
+
+            // Handle image upload
+            function handleImageUpload(file) {
+                if (!file.type.match('image.*')) {
+                    errorMessage.textContent = 'Please upload a valid image file (JPEG, PNG, etc.)';
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                    uploadedImage = e.target.result;
+                    previewBox.style.backgroundImage = `url(${e.target.result})`;
+                    previewBox.style.backgroundColor = 'transparent';
+                    previewBox.textContent = '';
+                    previewBox.style.clipPath = 'none'; // Clear previous clip path
+                };
+                reader.onerror = function() {
+                    errorMessage.textContent = 'Error reading image file';
+                };
+                reader.readAsDataURL(file);
+            }
+
+            // --- SVG Path Parsing and Bezier Approximation (Core Logic) ---
+            function parseSvgPath(pathData) {
+                const commands = [];
+                const commandRegex = /([MLHVCSQTAZmlhvcsqtaz])([^MLHVCSQTAZmlhvcsqtaz]*)/g;
+                let match;
+                while ((match = commandRegex.exec(pathData)) !== null) {
+                    const command = match[1];
+                    const args = match[2].trim().split(/[\s,]+/).filter(Boolean).map(Number);
+                    commands.push({ command: command, args: args });
+                }
+                return commands;
+            }
+
+            function getPointAtLength(p0, p1, p2, p3, t) {
+                const x = (1 - t)**3 * p0.x + 3 * (1 - t)**2 * t * p1.x + 3 * (1 - t) * t**2 * p2.x + t**3 * p3.x;
+                const y = (1 - t)**3 * p0.y + 3 * (1 - t)**2 * t * p1.y + 3 * (1 - t) * t**2 * p2.y + t**3 * p3.y;
+                return { x, y };
+            }
+
+            function getQuadraticPointAtLength(p0, p1, p2, t) {
+                const x = (1 - t)**2 * p0.x + 2 * (1 - t) * t * p1.x + t**2 * p2.x;
+                const y = (1 - t)**2 * p0.y + 2 * (1 - t) * t * p1.y + t**2 * p2.y;
+                return { x, y };
+            }
+
+            function convertPathToPolygon(svgPath) {
+                const numSegmentsPerCurve = parseInt(numSegmentsInput.value, 10);
+                if (isNaN(numSegmentsPerCurve) || numSegmentsPerCurve < 1) {
+                    throw new Error('Number of curve segments must be a positive integer.');
+                }
+
+                const parsedCommands = parseSvgPath(svgPath);
+                const polygonPoints = [];
+                let currentX = 0;
+                let currentY = 0;
+                let startX = 0;
+                let startY = 0;
+                let lastControlX = 0;
+                let lastControlY = 0;
+
+                const getCoord = (value, current, isRel) => isRel ? current + value : value;
+
+                parsedCommands.forEach(cmdObj => {
+                    const command = cmdObj.command.toUpperCase();
+                    const args = cmdObj.args;
+                    let isRelative = cmdObj.command === cmdObj.command.toLowerCase();
+
+                    let inferredControlX = currentX;
+                    let inferredControlY = currentY;
+
+                    if (command === 'S' || command === 'T') {
+                        inferredControlX = currentX + (currentX - lastControlX);
+                        inferredControlY = currentY + (currentY - lastControlY);
+                    }
+
+
+                    switch (command) {
+                        case 'M': // moveto
+                            currentX = getCoord(args[0], currentX, isRelative);
+                            currentY = getCoord(args[1], currentY, isRelative);
+                            startX = currentX;
+                            startY = currentY;
+                            polygonPoints.push({ x: currentX, y: currentY });
+                            lastControlX = currentX;
+                            lastControlY = currentY;
+                            break;
+
+                        case 'L': // lineto
+                            currentX = getCoord(args[0], currentX, isRelative);
+                            currentY = getCoord(args[1], currentY, isRelative);
+                            polygonPoints.push({ x: currentX, y: currentY });
+                            lastControlX = currentX;
+                            lastControlY = currentY;
+                            break;
+
+                        case 'H': // horizontal lineto
+                            currentX = getCoord(args[0], currentX, isRelative);
+                            polygonPoints.push({ x: currentX, y: currentY });
+                            lastControlX = currentX;
+                            lastControlY = currentY;
+                            break;
+
+                        case 'V': // vertical lineto
+                            currentY = getCoord(args[0], currentY, isRelative);
+                            polygonPoints.push({ x: currentX, y: currentY });
+                            lastControlX = currentX;
+                            lastControlY = currentY;
+                            break;
+
+                        case 'C': // cubic Bezier curveto
+                            let p0_C = { x: currentX, y: currentY };
+                            let cp1_C = { x: getCoord(args[0], currentX, isRelative), y: getCoord(args[1], currentY, isRelative) };
+                            let cp2_C = { x: getCoord(args[2], currentX, isRelative), y: getCoord(args[3], currentY, isRelative) };
+                            let p3_C = { x: getCoord(args[4], currentX, isRelative), y: getCoord(args[5], currentY, isRelative) };
+
+                            for (let i = 1; i <= numSegmentsPerCurve; i++) {
+                                const t = i / numSegmentsPerCurve;
+                                const point = getPointAtLength(p0_C, cp1_C, cp2_C, p3_C, t);
+                                polygonPoints.push(point);
+                            }
+                            currentX = p3_C.x;
+                            currentY = p3_C.y;
+                            lastControlX = cp2_C.x;
+                            lastControlY = cp2_C.y;
+                            break;
+
+                        case 'S': // smooth cubic Bezier curveto
+                            let p0_S = { x: currentX, y: currentY };
+                            let cp1_S = { x: inferredControlX, y: inferredControlY }; // Reflected control point
+                            let cp2_S = { x: getCoord(args[0], currentX, isRelative), y: getCoord(args[1], currentY, isRelative) };
+                            let p3_S = { x: getCoord(args[2], currentX, isRelative), y: getCoord(args[3], currentY, isRelative) };
+
+                            for (let i = 1; i <= numSegmentsPerCurve; i++) {
+                                const t = i / numSegmentsPerCurve;
+                                const point = getPointAtLength(p0_S, cp1_S, cp2_S, p3_S, t);
+                                polygonPoints.push(point);
+                            }
+                            currentX = p3_S.x;
+                            currentY = p3_S.y;
+                            lastControlX = cp2_S.x;
+                            lastControlY = cp2_S.y;
+                            break;
+
+                        case 'Q': // quadratic Bezier curveto
+                            let p0_Q = { x: currentX, y: currentY };
+                            let cp1_Q = { x: getCoord(args[0], currentX, isRelative), y: getCoord(args[1], currentY, isRelative) };
+                            let p2_Q = { x: getCoord(args[2], currentX, isRelative), y: getCoord(args[3], currentY, isRelative) };
+
+                            for (let i = 1; i <= numSegmentsPerCurve; i++) {
+                                const t = i / numSegmentsPerCurve;
+                                const point = getQuadraticPointAtLength(p0_Q, cp1_Q, p2_Q, t);
+                                polygonPoints.push(point);
+                            }
+                            currentX = p2_Q.x;
+                            currentY = p2_Q.y;
+                            lastControlX = cp1_Q.x;
+                            lastControlY = cp1_Q.y;
+                            break;
+
+                        case 'T': // smooth quadratic Bezier curveto
+                            let p0_T = { x: currentX, y: currentY };
+                            let cp1_T = { x: inferredControlX, y: inferredControlY }; // Reflected control point
+                            let p2_T = { x: getCoord(args[0], currentX, isRelative), y: getCoord(args[1], currentY, isRelative) };
+
+                            for (let i = 1; i <= numSegmentsPerCurve; i++) {
+                                const t = i / numSegmentsPerCurve;
+                                const point = getQuadraticPointAtLength(p0_T, cp1_T, p2_T, t);
+                                polygonPoints.push(point);
+                            }
+                            currentX = p2_T.x;
+                            currentY = p2_T.y;
+                            lastControlX = cp1_T.x;
+                            lastControlY = cp1_T.y;
+                            break;
+
+                        case 'A': // elliptical arc curveto
+                            currentX = getCoord(args[5], currentX, isRelative);
+                            currentY = getCoord(args[6], currentY, isRelative);
+                            polygonPoints.push({ x: currentX, y: currentY });
+                            lastControlX = currentX; // No control point after A
+                            lastControlY = currentY;
+                            break;
+
+                        case 'Z': // closepath
+                            if (polygonPoints.length > 0 && (Math.abs(currentX - startX) > 0.001 || Math.abs(currentY - startY) > 0.001)) { // Small tolerance
+                                polygonPoints.push({ x: startX, y: startY });
+                            }
+                            currentX = startX;
+                            currentY = startY;
+                            lastControlX = startX; // Reset control point to start for Z
+                            lastControlY = startY;
+                            break;
+                    }
+                });
+
+                if (polygonPoints.length === 0) {
+                    throw new Error("No points extracted from SVG path. Is it valid?");
+                }
+
+                // Remove duplicate consecutive points (add tolerance for floats)
+                const uniquePoints = [];
+                if (polygonPoints.length > 0) {
+                    uniquePoints.push(polygonPoints[0]);
+                    for (let i = 1; i < polygonPoints.length; i++) {
+                        const last = uniquePoints[uniquePoints.length - 1];
+                        const current = polygonPoints[i];
+                        if (Math.hypot(last.x - current.x, last.y - current.y) > 0.0001) { // Very small tolerance
+                            uniquePoints.push(current);
+                        }
+                    }
+                }
+
+                // Find bounds to normalize to percentages
+                let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+                uniquePoints.forEach(p => {
+                    minX = Math.min(minX, p.x);
+                    maxX = Math.max(maxX, p.x);
+                    minY = Math.min(minY, p.y);
+                    maxY = Math.max(maxY, p.y);
+                });
+
+                let width = maxX - minX;
+                let height = maxY - minY;
+
+                const polygonPointsNormalized = uniquePoints.map(p => {
+                    // Handle cases where width or height is zero (e.g., straight line paths)
+                    const xPercent = width === 0 ? (p.x === minX ? 0 : 100) : ((p.x - minX) / width) * 100;
+                    const yPercent = height === 0 ? (p.y === minY ? 0 : 100) : ((p.y - minY) / height) * 100;
+                    return `${xPercent.toFixed(2)}% ${yPercent.toFixed(2)}%`;
+                }).join(',');
+
+                return polygonPointsNormalized;
+            }
+
+            function updateOutputBasedOnType() {
+                if (currentOutputType === 'polygon') {
+                    if (lastGeneratedPathData) {
+                        try {
+                            const polygonPoints = convertPathToPolygon(lastGeneratedPathData);
+                            cssOutput.value = `clip-path: polygon(${polygonPoints});`;
+                            previewBox.style.clipPath = `polygon(${polygonPoints})`;
+                        } catch (e) {
+                            errorMessage.textContent = `Error generating polygon: ${e.message}`;
+                            cssOutput.value = '';
+                            previewBox.style.clipPath = 'none';
+                        }
+                    } else {
+                        cssOutput.value = '';
+                        previewBox.style.clipPath = 'none';
+                        errorMessage.textContent = 'Please convert an SVG path first to see polygon output.';
+                    }
+                } else { // path
+                    if (lastGeneratedPathData) {
+                        cssOutput.value = `clip-path: path('${lastGeneratedPathData}');`;
+                        // For preview, we still use the polygon approximation
+                        // as clip-path: path() is not universally supported in browsers for direct preview.
+                        try {
+                             const polygonPoints = convertPathToPolygon(lastGeneratedPathData);
+                             previewBox.style.clipPath = `polygon(${polygonPoints})`; // Still show polygon approximation in preview
+                        } catch (e) {
+                             previewBox.style.clipPath = 'none';
+                        }
+
+                    } else {
+                        cssOutput.value = '';
+                        previewBox.style.clipPath = 'none';
+                        errorMessage.textContent = 'Please convert an SVG path first to see path() output.';
+                    }
+                }
+            }
+
+
+            // Convert SVG path to CSS
+            function convertSvgPath() {
+                const svgPath = svgPathInput.value.trim();
+                if (!svgPath) {
+                    errorMessage.textContent = 'Please enter an SVG path';
+                    return;
+                }
+
+                try {
+                    const validStart = /^[MLHVCSQTAZmlhvcsqtaz]/.test(svgPath);
+                    if (!validStart) {
+                        throw new Error('Invalid SVG path - must start with a valid command (M, L, H, V, C, S, Q, T, A, Z)');
+                    }
+                    lastGeneratedPathData = svgPath; // Store the original SVG path
+                    updateOutputBasedOnType(); // Update both polygon and path output
+
+                    previewBox.style.backgroundImage = 'none';
+                    previewBox.style.backgroundColor = colorPicker.value;
+                    previewBox.textContent = 'Preview';
+
+                    successMessage.textContent = 'Conversion successful!';
+                } catch (err) {
+                    errorMessage.textContent = `Error: ${err.message}`;
+                    cssOutput.value = '';
+                    previewBox.style.clipPath = 'none';
+                    previewBox.textContent = 'Error';
+                    previewBox.style.backgroundColor = '#e74c3c';
+                    lastGeneratedPathData = '';
+                }
+            }
+
+            // Convert image to path using ImageTracer
+            async function convertImageToPath() {
+                try {
+                    convertBtn.disabled = true;
+                    convertBtn.textContent = 'Processing...';
+                    errorMessage.textContent = '';
+                    successMessage.textContent = '';
+                    lastGeneratedPathData = ''; // Clear previous path data
+
+                    const img = new Image();
+                    img.crossOrigin = 'Anonymous';
+                    await new Promise((resolve, reject) => {
+                        img.onload = resolve;
+                        img.onerror = () => reject(new Error('Image failed to load. Check console for CORS issues or invalid URL.'));
+                        img.src = uploadedImage;
+                    });
+
+                    traceImageWithImageTracer(img);
+                } catch (err) {
+                    errorMessage.textContent = `Error: ${err.message}`;
+                } finally {
+                    convertBtn.disabled = false;
+                    convertBtn.textContent = 'Convert to CSS Clip-Path';
+                }
+            }
+
+            // Trace image and extract SVG path using ImageTracer
+            function traceImageWithImageTracer(imgElement) {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = imgElement.naturalWidth || imgElement.width;
+                    canvas.height = imgElement.naturalHeight || imgElement.height;
+                    ctx.drawImage(imgElement, 0, 0);
+
+                    // ImageTracer options, adjustable via UI
+                    const options = {
+                        ltres: parseFloat(lineResInput.value),
+                        qtres: parseFloat(quadResInput.value),
+                        pathomit: 0,
+                        linefilter: true,
+                        turdsize: parseInt(turdSizeInput.value, 10),
+                    };
+
+                    ImageTracer.imageToSVG(
+                        canvas.toDataURL('image/png'),
+                        function(svgString) {
+                            const parser = new DOMParser();
+                            const svgDoc = parser.parseFromString(svgString, 'image/svg+xml');
+                            const paths = svgDoc.querySelectorAll('path');
+                            let mainPathData = '';
+
+                            if (paths.length > 0) {
+                                let longestPathD = '';
+                                paths.forEach(p => {
+                                    const d = p.getAttribute('d');
+                                    if (d && d.length > longestPathD.length) {
+                                        longestPathD = d;
+                                    }
+                                });
+                                mainPathData = longestPathD;
+
+                                if (mainPathData) {
+                                    svgPathInput.value = mainPathData;
+                                    lastGeneratedPathData = mainPathData; // Store the traced path
+                                    updateOutputBasedOnType(); // Update output
+
+                                    // For image previews, the background image is important
+                                    previewBox.style.backgroundImage = `url(${uploadedImage})`;
+                                    previewBox.style.backgroundColor = 'transparent';
+                                    previewBox.textContent = ''; // No text over image
+
+                                    successMessage.textContent = 'Image traced and converted!';
+                                } else {
+                                    errorMessage.textContent = 'No significant path found in traced SVG. Try adjusting image tracing options or using a higher contrast image.';
+                                    lastGeneratedPathData = '';
+                                    cssOutput.value = '';
+                                    previewBox.style.clipPath = 'none';
+                                }
+                            } else {
+                                errorMessage.textContent = 'No path elements found in traced SVG. Try adjusting image tracing options or using a different image.';
+                                lastGeneratedPathData = '';
+                                cssOutput.value = '';
+                                previewBox.style.clipPath = 'none';
+                            }
+                        },
+                        options
+                    );
+                } catch (err) {
+                    console.error("ImageTracer error:", err);
+                    errorMessage.textContent = "Image tracing failed. Check console for details or try a different image/options.";
+                    lastGeneratedPathData = '';
+                }
+            }
+
+            // Initial setup on load
+            convertSvgPath(); // Convert default SVG path on load
+            updateBrowserSupportNote(); // Set initial browser support note
+        });
+    </script>
+</body>
+</html>
